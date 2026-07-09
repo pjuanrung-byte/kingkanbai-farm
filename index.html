@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>บันทึกกิจกรรมสวนทุเรียน</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root {
+    --green: #2e7d32; --green-dark: #1b5e20; --bg: #f4f7f4;
+    --card: #ffffff; --line: #dfe6df; --text: #1c2b1c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 18px;
+    padding-bottom: 110px;
+  }
+  header {
+    background: var(--green); color: #fff; padding: 16px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 20px; }
+  header p { font-size: 14px; opacity: .9; margin-top: 2px; }
+  .card {
+    background: var(--card); margin: 12px; padding: 16px;
+    border-radius: 14px; border: 1px solid var(--line);
+  }
+  .card h2 { font-size: 17px; color: var(--green-dark); margin-bottom: 10px; }
+  label { display: block; font-size: 15px; color: #555; margin: 12px 0 6px; }
+  select, input[type=text], input[type=number], input[type=date], textarea {
+    width: 100%; font-size: 19px; padding: 13px 12px;
+    border: 1.5px solid var(--line); border-radius: 10px; background: #fff;
+    font-family: inherit;
+  }
+  select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 11px 16px; border-radius: 999px; border: 1.5px solid var(--line);
+    background: #fff; font-size: 17px; cursor: pointer; user-select: none;
+  }
+  .chip.on { background: var(--green); color: #fff; border-color: var(--green); }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  .hidden { display: none; }
+  .submit-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px;
+    background: rgba(255,255,255,.97); border-top: 1px solid var(--line);
+  }
+  button.submit {
+    width: 100%; padding: 16px; font-size: 21px; font-weight: bold;
+    color: #fff; background: var(--green); border: none; border-radius: 12px;
+    font-family: inherit;
+  }
+  button.submit:disabled { background: #9e9e9e; }
+  #overlay {
+    position: fixed; inset: 0; background: rgba(255,255,255,.96);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; z-index: 100; text-align: center; padding: 24px;
+  }
+  #overlay .big { font-size: 64px; }
+  #overlay .msg { font-size: 22px; font-weight: bold; }
+  #overlay .sub { font-size: 16px; color: #666; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 บันทึกกิจกรรมสวนทุเรียน</h1>
+  <p id="who">กำลังโหลด...</p>
+</header>
+
+<div class="card">
+  <h2>1. ข้อมูลพื้นฐาน</h2>
+  <label>วันที่</label>
+  <input type="date" id="f-date">
+  <label>แปลง <span style="color:#c62828">*</span></label>
+  <select id="f-plot"><option value="">— เลือกแปลง —</option></select>
+  <label>วันนี้ทำอะไรบ้าง (กดเลือกได้หลายอย่าง) <span style="color:#c62828">*</span></label>
+  <div class="chips" id="f-acts"></div>
+</div>
+
+<div class="card hidden" id="sec-water">
+  <h2>2. การรดน้ำ 💧</h2>
+  <label>ช่วงเวลารดน้ำ</label>
+  <select id="f-wtime"></select>
+  <label>รดนานแค่ไหน</label>
+  <select id="f-wdur"></select>
+</div>
+
+<div class="card hidden" id="sec-fert">
+  <h2>3. ปุ๋ย 🌿</h2>
+  <label>ปุ๋ยที่ใส่</label>
+  <select id="f-fert"></select>
+  <div class="row">
+    <div><label>ปริมาณ</label><input type="number" id="f-fert-qty" inputmode="decimal" placeholder="เช่น 1"></div>
+    <div><label>หน่วย</label><select id="f-fert-unit"></select></div>
+  </div>
+</div>
+
+<div class="card hidden" id="sec-insect">
+  <h2>4. ยาฆ่าแมลง 🐛</h2>
+  <label>ยาที่พ่น</label>
+  <select id="f-ins"></select>
+  <div class="row">
+    <div><label>ปริมาณ</label><input type="number" id="f-ins-qty" inputmode="decimal" placeholder="เช่น 20"></div>
+    <div><label>หน่วย</label><select id="f-ins-unit"></select></div>
+  </div>
+</div>
+
+<div class="card hidden" id="sec-fung">
+  <h2>ยากำจัดโรคพืช 🍄</h2>
+  <label>ยาที่พ่น</label>
+  <select id="f-fung"></select>
+  <div class="row">
+    <div><label>ปริมาณ</label><input type="number" id="f-fung-qty" inputmode="decimal" placeholder="เช่น 30"></div>
+    <div><label>หน่วย</label><select id="f-fung-unit"></select></div>
+  </div>
+</div>
+
+<div class="card hidden" id="sec-bio">
+  <h2>5. ชีวภัณฑ์ 🦠</h2>
+  <label>ชีวภัณฑ์ที่ใช้</label>
+  <select id="f-bio"></select>
+  <div class="row">
+    <div><label>ปริมาณ</label><input type="number" id="f-bio-qty" inputmode="decimal" placeholder="เช่น 50"></div>
+    <div><label>หน่วย</label><select id="f-bio-unit"></select></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>6. เจอโรคหรือแมลงไหม? 🔍</h2>
+  <div class="chips" id="f-pests"></div>
+</div>
+
+<div class="card">
+  <h2>7. หมายเหตุ (ถ้ามี)</h2>
+  <textarea id="f-note" rows="2" placeholder="พิมพ์เพิ่มเติม เช่น ต้นไหนผิดปกติ"></textarea>
+  <label>ชื่อผู้บันทึก</label>
+  <input type="text" id="f-name">
+</div>
+
+<div class="submit-bar">
+  <button class="submit" id="btn-submit" disabled>✅ ส่งข้อมูล</button>
+</div>
+
+<div id="overlay">
+  <div class="big" id="ov-icon">⏳</div>
+  <div class="msg" id="ov-msg">กำลังส่งข้อมูล...</div>
+  <div class="sub" id="ov-sub"></div>
+</div>
+
+<script>
+// ================== ตั้งค่า (แก้ 2 บรรทัดนี้ตอนติดตั้ง) ==================
+var LIFF_ID = '2010658196-oX7HbG4T';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbw2dmmEqiC5y35oyROABYUy5IxCt3m_WFD6M6YjssONERlgBg6-Ec8i8Jfe3ZLw8KG4/exec';
+// =====================================================================
+
+var OPT = {};          // ตัวเลือกจากชีท
+var acts = [];         // กิจกรรมที่เลือก
+var pests = [];        // โรค/แมลงที่เลือก
+
+function $(id) { return document.getElementById(id); }
+
+function fillSelect(el, list, noneLabel) {
+  el.innerHTML = '';
+  if (noneLabel) el.appendChild(new Option(noneLabel, ''));
+  (list || []).forEach(function (v) { el.appendChild(new Option(v, v)); });
+}
+
+function makeChips(container, list, selected, single) {
+  container.innerHTML = '';
+  (list || []).forEach(function (v) {
+    var c = document.createElement('div');
+    c.className = 'chip'; c.textContent = v;
+    c.onclick = function () {
+      var isNone = function (t) { return t.indexOf('ไม่พบ') === 0; };
+      var i = selected.indexOf(v);
+      if (i >= 0) { selected.splice(i, 1); c.classList.remove('on'); }
+      else {
+        if (isNone(v) || single) { selected.length = 0; container.querySelectorAll('.chip').forEach(function (x) { x.classList.remove('on'); }); }
+        else {
+          for (var ni = selected.length - 1; ni >= 0; ni--) { if (isNone(selected[ni])) selected.splice(ni, 1); }
+          container.querySelectorAll('.chip').forEach(function (x) { if (isNone(x.textContent)) x.classList.remove('on'); });
+        }
+        selected.push(v); c.classList.add('on');
+      }
+      onActsChange(); validate();
+    };
+    container.appendChild(c);
+  });
+}
+
+function hasAct(kw) { return acts.some(function (a) { return a.indexOf(kw) >= 0; }); }
+
+function onActsChange() {
+  var show = function (id, on) { $(id).classList.toggle('hidden', !on); };
+  show('sec-water', hasAct('รดน้ำ'));
+  show('sec-fert', hasAct('ปุ๋ย') || hasAct('ใส่') || hasAct('ราดสาร') || hasAct('ฉีดพ่นทางใบ'));
+  show('sec-insect', hasAct('ยาฆ่าแมลง'));
+  show('sec-fung', hasAct('ยากำจัดโรค'));
+  show('sec-bio', hasAct('ชีวภัณฑ์'));
+}
+
+function validate() {
+  $('btn-submit').disabled = !($('f-plot').value && acts.length > 0);
+}
+
+function todayISO() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function thaiDate(iso) {
+  if (!iso) return '';
+  var p = iso.split('-');
+  return p[2] + '/' + p[1] + '/' + p[0];
+}
+
+function overlay(icon, msg, sub) {
+  $('ov-icon').textContent = icon; $('ov-msg').textContent = msg; $('ov-sub').textContent = sub || '';
+  $('overlay').style.display = 'flex';
+}
+
+// ---------- โหลดตัวเลือกและโปรไฟล์ ----------
+function init() {
+  $('f-date').value = todayISO();
+
+  fetch(GAS_URL + '?action=options')
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      OPT = j.options || {};
+      var noSep = function (list) { return (list || []).filter(function (v) { return v.indexOf('—') < 0; }); };
+      var units = OPT['หน่วย'];
+      fillSelect($('f-plot'), OPT['แปลง'], '— เลือกแปลง —');
+      makeChips($('f-acts'), OPT['กิจกรรมหลัก'], acts);
+      makeChips($('f-pests'), noSep(OPT['โรคและแมลงที่พบ']), pests);
+      fillSelect($('f-wtime'), OPT['ช่วงเวลารดน้ำ'], '— เลือก —');
+      fillSelect($('f-wdur'), OPT['ระยะเวลารดน้ำ'], '— เลือก —');
+      fillSelect($('f-fert'), OPT['ปุ๋ย'], '— เลือกปุ๋ย —');
+      fillSelect($('f-fert-unit'), units, '— หน่วย —');
+      fillSelect($('f-ins'), OPT['ยาฆ่าแมลง (IRAC)'], '— เลือกยา —');
+      fillSelect($('f-ins-unit'), units, '— หน่วย —');
+      fillSelect($('f-fung'), OPT['ยากำจัดโรคพืช (FRAC)'], '— เลือกยา —');
+      fillSelect($('f-fung-unit'), units, '— หน่วย —');
+      fillSelect($('f-bio'), OPT['ชีวภัณฑ์'], '— เลือกชีวภัณฑ์ —');
+      fillSelect($('f-bio-unit'), units, '— หน่วย —');
+    })
+    .catch(function () {
+      overlay('⚠️', 'โหลดตัวเลือกไม่ได้', 'เช็คอินเทอร์เน็ตแล้วเปิดฟอร์มใหม่อีกครั้ง');
+    });
+
+  $('f-plot').onchange = validate;
+
+  liff.init({ liffId: LIFF_ID })
+    .then(function () {
+      if (!liff.isLoggedIn() && !liff.isInClient()) { liff.login(); return; }
+      return liff.getProfile();
+    })
+    .then(function (p) {
+      if (p) { $('f-name').value = p.displayName; $('who').textContent = 'ผู้บันทึก: ' + p.displayName; }
+    })
+    .catch(function () { $('who').textContent = 'กรอกชื่อผู้บันทึกด้านล่าง'; });
+}
+
+// ---------- ส่งข้อมูล ----------
+$('btn-submit').onclick = function () {
+  var data = {
+    'วันที่': $('f-date').value, // ส่งเป็น yyyy-mm-dd ฝั่งสคริปต์แปลงเป็น Date เอง
+    'แปลง': $('f-plot').value,
+    'กิจกรรมหลัก': acts.join(', '),
+    'โรคและแมลงที่พบ': pests.join(', '),
+    'ช่วงเวลารดน้ำ': $('f-wtime').value,
+    'ระยะเวลารดน้ำ': $('f-wdur').value,
+    'ปุ๋ย': $('f-fert').value,
+    'ปริมาณปุ๋ย': $('f-fert-qty').value,
+    'หน่วยปุ๋ย': $('f-fert-unit').value,
+    'ยาฆ่าแมลง': $('f-ins').value,
+    'ปริมาณยาฆ่าแมลง': $('f-ins-qty').value,
+    'หน่วยยาฆ่าแมลง': $('f-ins-unit').value,
+    'ยากำจัดโรคพืช': $('f-fung').value,
+    'ปริมาณยากำจัดโรค': $('f-fung-qty').value,
+    'หน่วยยากำจัดโรค': $('f-fung-unit').value,
+    'ชีวภัณฑ์': $('f-bio').value,
+    'ปริมาณชีวภัณฑ์': $('f-bio-qty').value,
+    'หน่วยชีวภัณฑ์': $('f-bio-unit').value,
+    'หมายเหตุ': $('f-note').value.trim(),
+    'ผู้บันทึก': $('f-name').value.trim() || 'ไม่ระบุ'
+  };
+  // ล้างค่าหมวดที่ซ่อนอยู่ (กันข้อมูลค้าง)
+  if ($('sec-water').classList.contains('hidden')) { data['ช่วงเวลารดน้ำ'] = ''; data['ระยะเวลารดน้ำ'] = ''; }
+  if ($('sec-fert').classList.contains('hidden')) { data['ปุ๋ย'] = ''; data['ปริมาณปุ๋ย'] = ''; data['หน่วยปุ๋ย'] = ''; }
+  if ($('sec-insect').classList.contains('hidden')) { data['ยาฆ่าแมลง'] = ''; data['ปริมาณยาฆ่าแมลง'] = ''; data['หน่วยยาฆ่าแมลง'] = ''; }
+  if ($('sec-fung').classList.contains('hidden')) { data['ยากำจัดโรคพืช'] = ''; data['ปริมาณยากำจัดโรค'] = ''; data['หน่วยยากำจัดโรค'] = ''; }
+  if ($('sec-bio').classList.contains('hidden')) { data['ชีวภัณฑ์'] = ''; data['ปริมาณชีวภัณฑ์'] = ''; data['หน่วยชีวภัณฑ์'] = ''; }
+
+  overlay('⏳', 'กำลังส่งข้อมูล...', '');
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'submit', data: data })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j.ok) {
+        overlay('✅', 'บันทึกเรียบร้อย!', 'ปิดหน้านี้ได้เลย');
+        setTimeout(function () { if (liff.isInClient()) liff.closeWindow(); }, 1800);
+      } else { throw new Error(j.error || 'save failed'); }
+    })
+    .catch(function () {
+      overlay('❌', 'ส่งไม่สำเร็จ', 'เช็คอินเทอร์เน็ตแล้วลองกดส่งใหม่');
+      setTimeout(function () { $('overlay').style.display = 'none'; }, 2500);
+    });
+};
+
+init();
+</script>
+</body>
+</html>
