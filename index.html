@@ -27,6 +27,7 @@
     border-radius: 14px; border: 1px solid var(--line);
   }
   .card h2 { font-size: 17px; color: var(--green-dark); margin-bottom: 10px; }
+  .hint { font-size: 13px; color: #888; font-weight: normal; }
   label { display: block; font-size: 15px; color: #555; margin: 12px 0 6px; }
   select, input[type=text], input[type=number], input[type=date], textarea {
     width: 100%; font-size: 19px; padding: 13px 12px;
@@ -43,6 +44,21 @@
   .row { display: flex; gap: 8px; }
   .row > div { flex: 1; }
   .hidden { display: none; }
+  .multi-row {
+    border: 1.5px dashed var(--line); border-radius: 12px; padding: 12px 12px 6px;
+    margin-bottom: 12px; background: #fafcfa;
+  }
+  .multi-row:first-child { margin-top: 2px; }
+  .add-row {
+    width: 100%; padding: 13px; font-size: 16px; font-weight: bold;
+    color: var(--green-dark); background: #e8f5e9; border: 1.5px dashed var(--green);
+    border-radius: 10px; margin-top: 2px; font-family: inherit;
+  }
+  .mr-actions { text-align: right; margin-top: 10px; }
+  .mr-remove {
+    display: inline-block; color: #c62828; font-size: 14px;
+    padding: 6px 4px; cursor: pointer; user-select: none;
+  }
   .submit-bar {
     position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px;
     background: rgba(255,255,255,.97); border-top: 1px solid var(--line);
@@ -74,28 +90,24 @@
   <h2>1. ข้อมูลพื้นฐาน</h2>
   <label>วันที่</label>
   <input type="date" id="f-date">
-  <label>แปลง <span style="color:#c62828">*</span></label>
-  <select id="f-plot"><option value="">— เลือกแปลง —</option></select>
+  <div id="block-plot" class="hidden">
+    <label>แปลง <span style="color:#c62828">*</span></label>
+    <select id="f-plot"><option value="">— เลือกแปลง —</option></select>
+  </div>
   <label>วันนี้ทำอะไรบ้าง (กดเลือกได้หลายอย่าง) <span style="color:#c62828">*</span></label>
   <div class="chips" id="f-acts"></div>
 </div>
 
 <div class="card hidden" id="sec-water">
-  <h2>2. การรดน้ำ 💧</h2>
-  <label>ช่วงเวลารดน้ำ</label>
-  <select id="f-wtime"></select>
-  <label>รดนานแค่ไหน</label>
-  <select id="f-wdur"></select>
+  <h2>2. การรดน้ำ 💧 <span class="hint">(เลือกได้หลายแปลง)</span></h2>
+  <div id="water-rows"></div>
+  <button type="button" class="add-row" id="btn-add-water">+ เพิ่มแปลง</button>
 </div>
 
 <div class="card hidden" id="sec-fert">
-  <h2>3. ปุ๋ย 🌿</h2>
-  <label>ปุ๋ยที่ใส่</label>
-  <select id="f-fert"></select>
-  <div class="row">
-    <div><label>ปริมาณ</label><input type="number" id="f-fert-qty" inputmode="decimal" placeholder="เช่น 1"></div>
-    <div><label>หน่วย</label><select id="f-fert-unit"></select></div>
-  </div>
+  <h2>3. ปุ๋ย 🌿 <span class="hint">(เลือกได้หลายแปลง)</span></h2>
+  <div id="fert-rows"></div>
+  <button type="button" class="add-row" id="btn-add-fert">+ เพิ่มแปลง</button>
 </div>
 
 <div class="card hidden" id="sec-insect">
@@ -192,29 +204,114 @@ function makeChips(container, list, selected, single) {
 }
 
 function hasAct(kw) { return acts.some(function (a) { return a.indexOf(kw) >= 0; }); }
+function actIsWater(a) { return a.indexOf('รดน้ำ') >= 0; }
+function actIsFert(a) { return a.indexOf('ปุ๋ย') >= 0 || a.indexOf('ใส่') >= 0 || a.indexOf('ราดสาร') >= 0 || a.indexOf('ฉีดพ่นทางใบ') >= 0; }
+
+// ---------- แถวรดน้ำ/ปุ๋ยแบบเพิ่มได้หลายแปลง ----------
+function addWaterRow() {
+  var div = document.createElement('div');
+  div.className = 'multi-row';
+  div.innerHTML =
+    '<label>แปลง</label><select class="mr-plot"></select>' +
+    '<div class="row">' +
+      '<div><label>ช่วงเวลา</label><select class="mr-time"></select></div>' +
+      '<div><label>รดนานแค่ไหน</label><select class="mr-dur"></select></div>' +
+    '</div>' +
+    '<div class="mr-actions"><span class="mr-remove">✕ ลบแปลงนี้</span></div>';
+  $('water-rows').appendChild(div);
+  fillSelect(div.querySelector('.mr-plot'), OPT['แปลง'], '— เลือกแปลง —');
+  fillSelect(div.querySelector('.mr-time'), OPT['ช่วงเวลารดน้ำ'], '— เลือก —');
+  fillSelect(div.querySelector('.mr-dur'), OPT['ระยะเวลารดน้ำ'], '— เลือก —');
+  div.querySelector('.mr-plot').onchange = validate;
+  div.querySelector('.mr-remove').onclick = function () {
+    div.remove();
+    if (!$('water-rows').children.length) addWaterRow();
+    validate();
+  };
+}
+
+function addFertRow() {
+  var div = document.createElement('div');
+  div.className = 'multi-row';
+  div.innerHTML =
+    '<label>แปลง</label><select class="mr-plot"></select>' +
+    '<label>ปุ๋ยที่ใส่</label><select class="mr-fert"></select>' +
+    '<div class="row">' +
+      '<div><label>ปริมาณ</label><input type="number" class="mr-qty" inputmode="decimal" placeholder="เช่น 1"></div>' +
+      '<div><label>หน่วย</label><select class="mr-unit"></select></div>' +
+    '</div>' +
+    '<div class="mr-actions"><span class="mr-remove">✕ ลบแปลงนี้</span></div>';
+  $('fert-rows').appendChild(div);
+  fillSelect(div.querySelector('.mr-plot'), OPT['แปลง'], '— เลือกแปลง —');
+  fillSelect(div.querySelector('.mr-fert'), OPT['ปุ๋ย'], '— เลือกปุ๋ย —');
+  fillSelect(div.querySelector('.mr-unit'), OPT['หน่วย'], '— หน่วย —');
+  div.querySelector('.mr-plot').onchange = validate;
+  div.querySelector('.mr-remove').onclick = function () {
+    div.remove();
+    if (!$('fert-rows').children.length) addFertRow();
+    validate();
+  };
+}
+
+function waterRowsValid() {
+  var rows = $('water-rows').querySelectorAll('.multi-row');
+  if (!rows.length) return false;
+  var any = false;
+  rows.forEach(function (r) { if (r.querySelector('.mr-plot').value) any = true; });
+  return any;
+}
+function fertRowsValid() {
+  var rows = $('fert-rows').querySelectorAll('.multi-row');
+  if (!rows.length) return false;
+  var any = false;
+  rows.forEach(function (r) { if (r.querySelector('.mr-plot').value) any = true; });
+  return any;
+}
+
+// ---------- สถานะฟอร์ม ----------
+function computeState() {
+  var hasWater = acts.some(actIsWater);
+  var hasFert = acts.some(actIsFert);
+  var otherActs = acts.filter(function (a) { return !actIsWater(a) && !actIsFert(a); });
+  var needsMainPlot = otherActs.length > 0 || pests.length > 0 || $('f-note').value.trim().length > 0;
+  return { hasWater: hasWater, hasFert: hasFert, otherActs: otherActs, needsMainPlot: needsMainPlot };
+}
+
+function toggleSection(sectionId, show, listId, addFn) {
+  var wasHidden = $(sectionId).classList.contains('hidden');
+  $(sectionId).classList.toggle('hidden', !show);
+  if (show && wasHidden) {
+    $(listId).innerHTML = '';
+    addFn();
+  }
+  if (!show) {
+    $(listId).innerHTML = '';
+  }
+}
 
 function onActsChange() {
-  var show = function (id, on) { $(id).classList.toggle('hidden', !on); };
-  show('sec-water', hasAct('รดน้ำ'));
-  show('sec-fert', hasAct('ปุ๋ย') || hasAct('ใส่') || hasAct('ราดสาร') || hasAct('ฉีดพ่นทางใบ'));
-  show('sec-insect', hasAct('ยาฆ่าแมลง'));
-  show('sec-fung', hasAct('ยากำจัดโรค'));
-  show('sec-bio', hasAct('ชีวภัณฑ์'));
+  var st = computeState();
+  toggleSection('sec-water', st.hasWater, 'water-rows', addWaterRow);
+  toggleSection('sec-fert', st.hasFert, 'fert-rows', addFertRow);
+  $('sec-insect').classList.toggle('hidden', !hasAct('ยาฆ่าแมลง'));
+  $('sec-fung').classList.toggle('hidden', !hasAct('ยากำจัดโรค'));
+  $('sec-bio').classList.toggle('hidden', !hasAct('ชีวภัณฑ์'));
+  $('block-plot').classList.toggle('hidden', !st.needsMainPlot);
+  validate();
 }
 
 function validate() {
-  $('btn-submit').disabled = !($('f-plot').value && acts.length > 0);
+  var st = computeState();
+  var ok = acts.length > 0;
+  if (st.hasWater) ok = ok && waterRowsValid();
+  if (st.hasFert) ok = ok && fertRowsValid();
+  if (st.needsMainPlot) ok = ok && !!$('f-plot').value;
+  $('btn-submit').disabled = !ok;
 }
 
 function todayISO() {
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-
-function thaiDate(iso) {
-  if (!iso) return '';
-  var p = iso.split('-');
-  return p[2] + '/' + p[1] + '/' + p[0];
 }
 
 function overlay(icon, msg, sub) {
@@ -225,6 +322,10 @@ function overlay(icon, msg, sub) {
 // ---------- โหลดตัวเลือกและโปรไฟล์ ----------
 function init() {
   $('f-date').value = todayISO();
+  $('btn-add-water').onclick = addWaterRow;
+  $('btn-add-fert').onclick = addFertRow;
+  $('f-note').oninput = onActsChange;
+  $('f-plot').onchange = validate;
 
   fetch(GAS_URL + '?action=options')
     .then(function (r) { return r.json(); })
@@ -235,10 +336,6 @@ function init() {
       fillSelect($('f-plot'), OPT['แปลง'], '— เลือกแปลง —');
       makeChips($('f-acts'), OPT['กิจกรรมหลัก'], acts);
       makeChips($('f-pests'), noSep(OPT['โรคและแมลงที่พบ']), pests);
-      fillSelect($('f-wtime'), OPT['ช่วงเวลารดน้ำ'], '— เลือก —');
-      fillSelect($('f-wdur'), OPT['ระยะเวลารดน้ำ'], '— เลือก —');
-      fillSelect($('f-fert'), OPT['ปุ๋ย'], '— เลือกปุ๋ย —');
-      fillSelect($('f-fert-unit'), units, '— หน่วย —');
       fillSelect($('f-ins'), OPT['ยาฆ่าแมลง (IRAC)'], '— เลือกยา —');
       fillSelect($('f-ins-unit'), units, '— หน่วย —');
       fillSelect($('f-fung'), OPT['ยากำจัดโรคพืช (FRAC)'], '— เลือกยา —');
@@ -249,8 +346,6 @@ function init() {
     .catch(function () {
       overlay('⚠️', 'โหลดตัวเลือกไม่ได้', 'เช็คอินเทอร์เน็ตแล้วเปิดฟอร์มใหม่อีกครั้ง');
     });
-
-  $('f-plot').onchange = validate;
 
   liff.init({ liffId: LIFF_ID })
     .then(function () {
@@ -265,40 +360,63 @@ function init() {
 
 // ---------- ส่งข้อมูล ----------
 $('btn-submit').onclick = function () {
-  var data = {
-    'วันที่': $('f-date').value, // ส่งเป็น yyyy-mm-dd ฝั่งสคริปต์แปลงเป็น Date เอง
-    'แปลง': $('f-plot').value,
-    'กิจกรรมหลัก': acts.join(', '),
-    'โรคและแมลงที่พบ': pests.join(', '),
-    'ช่วงเวลารดน้ำ': $('f-wtime').value,
-    'ระยะเวลารดน้ำ': $('f-wdur').value,
-    'ปุ๋ย': $('f-fert').value,
-    'ปริมาณปุ๋ย': $('f-fert-qty').value,
-    'หน่วยปุ๋ย': $('f-fert-unit').value,
-    'ยาฆ่าแมลง': $('f-ins').value,
-    'ปริมาณยาฆ่าแมลง': $('f-ins-qty').value,
-    'หน่วยยาฆ่าแมลง': $('f-ins-unit').value,
-    'ยากำจัดโรคพืช': $('f-fung').value,
-    'ปริมาณยากำจัดโรค': $('f-fung-qty').value,
-    'หน่วยยากำจัดโรค': $('f-fung-unit').value,
-    'ชีวภัณฑ์': $('f-bio').value,
-    'ปริมาณชีวภัณฑ์': $('f-bio-qty').value,
-    'หน่วยชีวภัณฑ์': $('f-bio-unit').value,
-    'หมายเหตุ': $('f-note').value.trim(),
-    'ผู้บันทึก': $('f-name').value.trim() || 'ไม่ระบุ'
-  };
-  // ล้างค่าหมวดที่ซ่อนอยู่ (กันข้อมูลค้าง)
-  if ($('sec-water').classList.contains('hidden')) { data['ช่วงเวลารดน้ำ'] = ''; data['ระยะเวลารดน้ำ'] = ''; }
-  if ($('sec-fert').classList.contains('hidden')) { data['ปุ๋ย'] = ''; data['ปริมาณปุ๋ย'] = ''; data['หน่วยปุ๋ย'] = ''; }
-  if ($('sec-insect').classList.contains('hidden')) { data['ยาฆ่าแมลง'] = ''; data['ปริมาณยาฆ่าแมลง'] = ''; data['หน่วยยาฆ่าแมลง'] = ''; }
-  if ($('sec-fung').classList.contains('hidden')) { data['ยากำจัดโรคพืช'] = ''; data['ปริมาณยากำจัดโรค'] = ''; data['หน่วยยากำจัดโรค'] = ''; }
-  if ($('sec-bio').classList.contains('hidden')) { data['ชีวภัณฑ์'] = ''; data['ปริมาณชีวภัณฑ์'] = ''; data['หน่วยชีวภัณฑ์'] = ''; }
+  var dateVal = $('f-date').value; // ส่งเป็น yyyy-mm-dd ฝั่งสคริปต์แปลงเป็น Date เอง
+  var recorder = $('f-name').value.trim() || 'ไม่ระบุ';
+  var st = computeState();
+  var records = [];
+
+  // รดน้ำ — 1 แถวต่อแปลงที่เลือก
+  $('water-rows').querySelectorAll('.multi-row').forEach(function (r) {
+    var plot = r.querySelector('.mr-plot').value;
+    if (!plot) return;
+    records.push({
+      _type: 'water', 'วันที่': dateVal, 'แปลง': plot, 'กิจกรรมหลัก': 'รดน้ำ',
+      'ช่วงเวลารดน้ำ': r.querySelector('.mr-time').value,
+      'ระยะเวลารดน้ำ': r.querySelector('.mr-dur').value,
+      'ผู้บันทึก': recorder
+    });
+  });
+
+  // ใส่ปุ๋ย — 1 แถวต่อแปลงที่เลือก
+  $('fert-rows').querySelectorAll('.multi-row').forEach(function (r) {
+    var plot = r.querySelector('.mr-plot').value;
+    if (!plot) return;
+    records.push({
+      _type: 'fert', 'วันที่': dateVal, 'แปลง': plot, 'กิจกรรมหลัก': 'ใส่ปุ๋ย',
+      'ปุ๋ย': r.querySelector('.mr-fert').value,
+      'ปริมาณปุ๋ย': r.querySelector('.mr-qty').value,
+      'หน่วยปุ๋ย': r.querySelector('.mr-unit').value,
+      'ผู้บันทึก': recorder
+    });
+  });
+
+  // กิจกรรมอื่น (ยาฆ่าแมลง/ยากำจัดโรค/ชีวภัณฑ์/โรคแมลงที่พบ/หมายเหตุ) — ใช้แปลงหลักเดียว
+  if (st.needsMainPlot && $('f-plot').value) {
+    records.push({
+      _type: 'other', 'วันที่': dateVal, 'แปลง': $('f-plot').value,
+      'กิจกรรมหลัก': st.otherActs.join(', '),
+      'โรคและแมลงที่พบ': pests.join(', '),
+      'ยาฆ่าแมลง': $('sec-insect').classList.contains('hidden') ? '' : $('f-ins').value,
+      'ปริมาณยาฆ่าแมลง': $('sec-insect').classList.contains('hidden') ? '' : $('f-ins-qty').value,
+      'หน่วยยาฆ่าแมลง': $('sec-insect').classList.contains('hidden') ? '' : $('f-ins-unit').value,
+      'ยากำจัดโรคพืช': $('sec-fung').classList.contains('hidden') ? '' : $('f-fung').value,
+      'ปริมาณยากำจัดโรค': $('sec-fung').classList.contains('hidden') ? '' : $('f-fung-qty').value,
+      'หน่วยยากำจัดโรค': $('sec-fung').classList.contains('hidden') ? '' : $('f-fung-unit').value,
+      'ชีวภัณฑ์': $('sec-bio').classList.contains('hidden') ? '' : $('f-bio').value,
+      'ปริมาณชีวภัณฑ์': $('sec-bio').classList.contains('hidden') ? '' : $('f-bio-qty').value,
+      'หน่วยชีวภัณฑ์': $('sec-bio').classList.contains('hidden') ? '' : $('f-bio-unit').value,
+      'หมายเหตุ': $('f-note').value.trim(),
+      'ผู้บันทึก': recorder
+    });
+  }
+
+  if (!records.length) return;
 
   overlay('⏳', 'กำลังส่งข้อมูล...', '');
   fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'submit', data: data })
+    body: JSON.stringify({ action: 'submit', data: records })
   })
     .then(function (r) { return r.json(); })
     .then(function (j) {
