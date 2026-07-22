@@ -118,6 +118,8 @@
     <div><label>ปริมาณ</label><input type="number" id="f-ins-qty" inputmode="decimal" placeholder="เช่น 20"></div>
     <div><label>หน่วย</label><select id="f-ins-unit"></select></div>
   </div>
+  <label>📷 ถ่ายรูปฉลากยา <span class="hint">(แนะนำ กันกรอกผิด)</span></label>
+  <input type="file" accept="image/*" capture="environment" id="f-ins-photo">
 </div>
 
 <div class="card hidden" id="sec-fung">
@@ -128,6 +130,8 @@
     <div><label>ปริมาณ</label><input type="number" id="f-fung-qty" inputmode="decimal" placeholder="เช่น 30"></div>
     <div><label>หน่วย</label><select id="f-fung-unit"></select></div>
   </div>
+  <label>📷 ถ่ายรูปฉลากยา <span class="hint">(แนะนำ กันกรอกผิด)</span></label>
+  <input type="file" accept="image/*" capture="environment" id="f-fung-photo">
 </div>
 
 <div class="card hidden" id="sec-bio">
@@ -319,6 +323,32 @@ function overlay(icon, msg, sub) {
   $('overlay').style.display = 'flex';
 }
 
+// ---------- อ่านรูปฉลากยา + ย่อขนาดก่อนส่ง (กันไฟล์ใหญ่เกิน) ----------
+function readPhotoAsBase64(inputEl, maxW) {
+  return new Promise(function (resolve) {
+    var file = inputEl.files && inputEl.files[0];
+    if (!file) { resolve(''); return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var scale = Math.min(1, maxW / img.width);
+        var w = Math.max(1, Math.round(img.width * scale));
+        var h = Math.max(1, Math.round(img.height * scale));
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        try { resolve(c.toDataURL('image/jpeg', 0.6).split(',')[1]); }
+        catch (e) { resolve(''); }
+      };
+      img.onerror = function () { resolve(''); };
+      img.src = reader.result;
+    };
+    reader.onerror = function () { resolve(''); };
+    reader.readAsDataURL(file);
+  });
+}
+
 // ---------- โหลดตัวเลือกและโปรไฟล์ ----------
 function init() {
   $('f-date').value = todayISO();
@@ -359,11 +389,18 @@ function init() {
 }
 
 // ---------- ส่งข้อมูล ----------
-$('btn-submit').onclick = function () {
+$('btn-submit').onclick = async function () {
+  $('btn-submit').disabled = true;
+  overlay('⏳', 'กำลังเตรียมข้อมูล...', '');
+
   var dateVal = $('f-date').value; // ส่งเป็น yyyy-mm-dd ฝั่งสคริปต์แปลงเป็น Date เอง
   var recorder = $('f-name').value.trim() || 'ไม่ระบุ';
   var st = computeState();
   var records = [];
+
+  // ถ่ายรูปฉลากยา (ถ้ามีและหมวดนั้นเปิดอยู่) — ย่อขนาดก่อนส่งกันช้า
+  var insPhoto = $('sec-insect').classList.contains('hidden') ? '' : await readPhotoAsBase64($('f-ins-photo'), 1000);
+  var fungPhoto = $('sec-fung').classList.contains('hidden') ? '' : await readPhotoAsBase64($('f-fung-photo'), 1000);
 
   // รดน้ำ — 1 แถวต่อแปลงที่เลือก
   $('water-rows').querySelectorAll('.multi-row').forEach(function (r) {
@@ -410,13 +447,13 @@ $('btn-submit').onclick = function () {
     });
   }
 
-  if (!records.length) return;
+  if (!records.length) { $('btn-submit').disabled = false; $('overlay').style.display = 'none'; return; }
 
-  overlay('⏳', 'กำลังส่งข้อมูล...', '');
+  overlay('⏳', 'กำลังส่งข้อมูล...', insPhoto || fungPhoto ? 'กำลังอัปโหลดรูปด้วย รอสักครู่...' : '');
   fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'submit', data: records })
+    body: JSON.stringify({ action: 'submit', data: records, insPhoto: insPhoto, fungPhoto: fungPhoto })
   })
     .then(function (r) { return r.json(); })
     .then(function (j) {
@@ -427,6 +464,7 @@ $('btn-submit').onclick = function () {
     })
     .catch(function () {
       overlay('❌', 'ส่งไม่สำเร็จ', 'เช็คอินเทอร์เน็ตแล้วลองกดส่งใหม่');
+      $('btn-submit').disabled = false;
       setTimeout(function () { $('overlay').style.display = 'none'; }, 2500);
     });
 };
