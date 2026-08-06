@@ -112,6 +112,8 @@
 
 <div class="card hidden" id="sec-insect">
   <h2>4. ยาฆ่าแมลง 🐛</h2>
+  <label>แปลง <span style="color:#c62828">*</span></label>
+  <select id="f-ins-plot"><option value="">— เลือกแปลง —</option></select>
   <label>ยาที่พ่น</label>
   <select id="f-ins"></select>
   <div class="row">
@@ -124,6 +126,8 @@
 
 <div class="card hidden" id="sec-fung">
   <h2>ยากำจัดโรคพืช 🍄</h2>
+  <label>แปลง <span style="color:#c62828">*</span></label>
+  <select id="f-fung-plot"><option value="">— เลือกแปลง —</option></select>
   <label>ยาที่พ่น</label>
   <select id="f-fung"></select>
   <div class="row">
@@ -136,6 +140,8 @@
 
 <div class="card hidden" id="sec-bio">
   <h2>5. ชีวภัณฑ์ 🦠</h2>
+  <label>แปลง <span style="color:#c62828">*</span></label>
+  <select id="f-bio-plot"><option value="">— เลือกแปลง —</option></select>
   <label>ชีวภัณฑ์ที่ใช้</label>
   <select id="f-bio"></select>
   <div class="row">
@@ -210,6 +216,9 @@ function makeChips(container, list, selected, single) {
 function hasAct(kw) { return acts.some(function (a) { return a.indexOf(kw) >= 0; }); }
 function actIsWater(a) { return a.indexOf('รดน้ำ') >= 0; }
 function actIsFert(a) { return a.indexOf('ปุ๋ย') >= 0 || a.indexOf('ใส่') >= 0 || a.indexOf('ราดสาร') >= 0 || a.indexOf('ฉีดพ่นทางใบ') >= 0; }
+function actIsInsect(a) { return a.indexOf('ยาฆ่าแมลง') >= 0; }
+function actIsFung(a) { return a.indexOf('ยากำจัดโรค') >= 0; }
+function actIsBio(a) { return a.indexOf('ชีวภัณฑ์') >= 0; }
 
 // ---------- แถวรดน้ำ/ปุ๋ยแบบเพิ่มได้หลายแปลง ----------
 function addWaterRow() {
@@ -276,7 +285,7 @@ function fertRowsValid() {
 function computeState() {
   var hasWater = acts.some(actIsWater);
   var hasFert = acts.some(actIsFert);
-  var otherActs = acts.filter(function (a) { return !actIsWater(a) && !actIsFert(a); });
+  var otherActs = acts.filter(function (a) { return !actIsWater(a) && !actIsFert(a) && !actIsInsect(a) && !actIsFung(a) && !actIsBio(a); });
   var needsMainPlot = otherActs.length > 0 || pests.length > 0 || $('f-note').value.trim().length > 0;
   return { hasWater: hasWater, hasFert: hasFert, otherActs: otherActs, needsMainPlot: needsMainPlot };
 }
@@ -310,6 +319,9 @@ function validate() {
   if (st.hasWater) ok = ok && waterRowsValid();
   if (st.hasFert) ok = ok && fertRowsValid();
   if (st.needsMainPlot) ok = ok && !!$('f-plot').value;
+  if (!$('sec-insect').classList.contains('hidden')) ok = ok && !!$('f-ins-plot').value;
+  if (!$('sec-fung').classList.contains('hidden')) ok = ok && !!$('f-fung-plot').value;
+  if (!$('sec-bio').classList.contains('hidden')) ok = ok && !!$('f-bio-plot').value;
   $('btn-submit').disabled = !ok;
 }
 
@@ -356,6 +368,9 @@ function init() {
   $('btn-add-fert').onclick = addFertRow;
   $('f-note').oninput = onActsChange;
   $('f-plot').onchange = validate;
+  $('f-ins-plot').onchange = validate;
+  $('f-fung-plot').onchange = validate;
+  $('f-bio-plot').onchange = validate;
 
   fetch(GAS_URL + '?action=options')
     .then(function (r) { return r.json(); })
@@ -364,6 +379,9 @@ function init() {
       var noSep = function (list) { return (list || []).filter(function (v) { return v.indexOf('—') < 0; }); };
       var units = OPT['หน่วย'];
       fillSelect($('f-plot'), OPT['แปลง'], '— เลือกแปลง —');
+      fillSelect($('f-ins-plot'), OPT['แปลง'], '— เลือกแปลง —');
+      fillSelect($('f-fung-plot'), OPT['แปลง'], '— เลือกแปลง —');
+      fillSelect($('f-bio-plot'), OPT['แปลง'], '— เลือกแปลง —');
       makeChips($('f-acts'), OPT['กิจกรรมหลัก'], acts);
       makeChips($('f-pests'), noSep(OPT['โรคและแมลงที่พบ']), pests);
       fillSelect($('f-ins'), OPT['ยาฆ่าแมลง (IRAC)'], '— เลือกยา —');
@@ -427,21 +445,48 @@ $('btn-submit').onclick = async function () {
     });
   });
 
-  // กิจกรรมอื่น (ยาฆ่าแมลง/ยากำจัดโรค/ชีวภัณฑ์/โรคแมลงที่พบ/หมายเหตุ) — ใช้แปลงหลักเดียว
+  // ยาฆ่าแมลง — แปลงของตัวเอง แยกจากกิจกรรมอื่น
+  if (!$('sec-insect').classList.contains('hidden') && $('f-ins-plot').value) {
+    records.push({
+      _type: 'insect', 'วันที่': dateVal, 'แปลง': $('f-ins-plot').value,
+      'กิจกรรมหลัก': acts.filter(actIsInsect).join(', '),
+      'ยาฆ่าแมลง': $('f-ins').value,
+      'ปริมาณยาฆ่าแมลง': $('f-ins-qty').value,
+      'หน่วยยาฆ่าแมลง': $('f-ins-unit').value,
+      'ผู้บันทึก': recorder
+    });
+  }
+
+  // ยากำจัดโรคพืช — แปลงของตัวเอง แยกจากกิจกรรมอื่น
+  if (!$('sec-fung').classList.contains('hidden') && $('f-fung-plot').value) {
+    records.push({
+      _type: 'fung', 'วันที่': dateVal, 'แปลง': $('f-fung-plot').value,
+      'กิจกรรมหลัก': acts.filter(actIsFung).join(', '),
+      'ยากำจัดโรคพืช': $('f-fung').value,
+      'ปริมาณยากำจัดโรค': $('f-fung-qty').value,
+      'หน่วยยากำจัดโรค': $('f-fung-unit').value,
+      'ผู้บันทึก': recorder
+    });
+  }
+
+  // ชีวภัณฑ์ — แปลงของตัวเอง แยกจากกิจกรรมอื่น
+  if (!$('sec-bio').classList.contains('hidden') && $('f-bio-plot').value) {
+    records.push({
+      _type: 'bio', 'วันที่': dateVal, 'แปลง': $('f-bio-plot').value,
+      'กิจกรรมหลัก': acts.filter(actIsBio).join(', '),
+      'ชีวภัณฑ์': $('f-bio').value,
+      'ปริมาณชีวภัณฑ์': $('f-bio-qty').value,
+      'หน่วยชีวภัณฑ์': $('f-bio-unit').value,
+      'ผู้บันทึก': recorder
+    });
+  }
+
+  // กิจกรรมอื่น (ตัดแต่งกิ่ง/เก็บเกี่ยว/ตรวจแปลง/กำจัดวัชพืช ฯลฯ /โรคแมลงที่พบ/หมายเหตุ) — ใช้แปลงหลักเดียว
   if (st.needsMainPlot && $('f-plot').value) {
     records.push({
       _type: 'other', 'วันที่': dateVal, 'แปลง': $('f-plot').value,
       'กิจกรรมหลัก': st.otherActs.join(', '),
       'โรคและแมลงที่พบ': pests.join(', '),
-      'ยาฆ่าแมลง': $('sec-insect').classList.contains('hidden') ? '' : $('f-ins').value,
-      'ปริมาณยาฆ่าแมลง': $('sec-insect').classList.contains('hidden') ? '' : $('f-ins-qty').value,
-      'หน่วยยาฆ่าแมลง': $('sec-insect').classList.contains('hidden') ? '' : $('f-ins-unit').value,
-      'ยากำจัดโรคพืช': $('sec-fung').classList.contains('hidden') ? '' : $('f-fung').value,
-      'ปริมาณยากำจัดโรค': $('sec-fung').classList.contains('hidden') ? '' : $('f-fung-qty').value,
-      'หน่วยยากำจัดโรค': $('sec-fung').classList.contains('hidden') ? '' : $('f-fung-unit').value,
-      'ชีวภัณฑ์': $('sec-bio').classList.contains('hidden') ? '' : $('f-bio').value,
-      'ปริมาณชีวภัณฑ์': $('sec-bio').classList.contains('hidden') ? '' : $('f-bio-qty').value,
-      'หน่วยชีวภัณฑ์': $('sec-bio').classList.contains('hidden') ? '' : $('f-bio-unit').value,
       'หมายเหตุ': $('f-note').value.trim(),
       'ผู้บันทึก': recorder
     });
@@ -473,3 +518,4 @@ init();
 </script>
 </body>
 </html>
+
