@@ -209,7 +209,7 @@ var SPRAY_CATS = [
 function sprayCat(key) { return SPRAY_CATS.filter(function (c) { return c.key === key; })[0]; }
 function defaultWater(plot) {
   if (plot.indexOf('ทั้งหมด') >= 0) return 800;
-  if (plot.indexOf('หนองสาหร่าย 3') >= 0) return 100;
+  if (plot.indexOf('หนองสาหร่าย 3') >= 0) return 20;
   return 200;
 }
 function shortName(n) { return String(n).replace(/^\[[^\]]*\]\s*/, '').replace(/\s*\(.*$/, '').replace(/\s+-\s+.*$/, ''); }
