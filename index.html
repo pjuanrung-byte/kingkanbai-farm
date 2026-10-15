@@ -55,6 +55,12 @@
     border-radius: 10px; margin-top: 2px; font-family: inherit;
   }
   .mr-actions { text-align: right; margin-top: 10px; }
+  .plot-line { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid #eef2ee; }
+  .plot-line label.pl { flex: 1; margin: 0; font-size: 18px; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .plot-line input[type=checkbox] { width: 24px; height: 24px; }
+  .plot-line input[type=number] { width: 96px; padding: 9px 8px; font-size: 18px; }
+  .plot-line .l { font-size: 14px; color: #666; }
+  .preview { margin-top: 12px; padding: 12px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px; font-size: 15px; line-height: 1.6; }
   .mr-remove {
     display: inline-block; color: #c62828; font-size: 14px;
     padding: 6px 4px; cursor: pointer; user-select: none;
@@ -105,58 +111,31 @@
 </div>
 
 <div class="card hidden" id="sec-fert">
-  <h2>3. ปุ๋ย 🌿 <span class="hint">(เลือกได้หลายแปลง)</span></h2>
+  <h2>3. ปุ๋ยทางดิน 🌿 <span class="hint">(เลือกได้หลายแปลง)</span></h2>
   <div id="fert-rows"></div>
   <button type="button" class="add-row" id="btn-add-fert">+ เพิ่มแปลง</button>
 </div>
 
-<div class="card hidden" id="sec-insect">
-  <h2>4. ยาฆ่าแมลง 🐛</h2>
-  <label>แปลง <span style="color:#c62828">*</span></label>
-  <select id="f-ins-plot"><option value="">— เลือกแปลง —</option></select>
-  <label>ยาที่พ่น</label>
-  <select id="f-ins"></select>
-  <div class="row">
-    <div><label>ปริมาณ</label><input type="number" id="f-ins-qty" inputmode="decimal" placeholder="เช่น 20"></div>
-    <div><label>หน่วย</label><select id="f-ins-unit"></select></div>
-  </div>
-  <label>📷 ถ่ายรูปฉลากยา <span style="color:#c62828">* ต้องถ่ายทุกครั้ง</span></label>
-  <input type="file" accept="image/*" capture="environment" id="f-ins-photo">
-</div>
-
-<div class="card hidden" id="sec-fung">
-  <h2>ยากำจัดโรคพืช 🍄</h2>
-  <label>แปลง <span style="color:#c62828">*</span></label>
-  <select id="f-fung-plot"><option value="">— เลือกแปลง —</option></select>
-  <label>ยาที่พ่น</label>
-  <select id="f-fung"></select>
-  <div class="row">
-    <div><label>ปริมาณ</label><input type="number" id="f-fung-qty" inputmode="decimal" placeholder="เช่น 30"></div>
-    <div><label>หน่วย</label><select id="f-fung-unit"></select></div>
-  </div>
-  <label>📷 ถ่ายรูปฉลากยา <span style="color:#c62828">* ต้องถ่ายทุกครั้ง</span></label>
-  <input type="file" accept="image/*" capture="environment" id="f-fung-photo">
-</div>
-
-<div class="card hidden" id="sec-bio">
-  <h2>5. ชีวภัณฑ์ 🦠</h2>
-  <label>แปลง <span style="color:#c62828">*</span></label>
-  <select id="f-bio-plot"><option value="">— เลือกแปลง —</option></select>
-  <label>ชีวภัณฑ์ที่ใช้</label>
-  <select id="f-bio"></select>
-  <div class="row">
-    <div><label>ปริมาณ</label><input type="number" id="f-bio-qty" inputmode="decimal" placeholder="เช่น 50"></div>
-    <div><label>หน่วย</label><select id="f-bio-unit"></select></div>
-  </div>
+<div class="card hidden" id="sec-spray">
+  <h2>4. ถังพ่น 💦 <span class="hint">(ยา + ปุ๋ยทางใบ ที่ผสมในถังเดียวกัน)</span></h2>
+  <label>① ติ๊กแปลงที่พ่น และใส่น้ำที่ใช้ (ลิตร) <span style="color:#c62828">*</span></label>
+  <div id="spray-plots"></div>
+  <label>② สารที่ใส่ — ปริมาณ <b>ต่อน้ำ 200 ลิตร</b> ตามข้อความใน Line <span style="color:#c62828">*</span></label>
+  <div id="spray-rows"></div>
+  <button type="button" class="add-row" id="btn-add-spray">+ เพิ่มสาร</button>
+  <div id="spray-preview" class="preview hidden"></div>
+  <label>③ 📷 ถ่ายรูปฉลากยาทุกขวด <span id="spray-photo-req" style="color:#c62828"></span></label>
+  <input type="file" accept="image/*" multiple id="f-spray-photo">
+  <div id="spray-photo-count" class="hint" style="margin-top:6px"></div>
 </div>
 
 <div class="card">
-  <h2>6. เจอโรคหรือแมลงไหม? 🔍</h2>
+  <h2>5. เจอโรคหรือแมลงไหม? 🔍</h2>
   <div class="chips" id="f-pests"></div>
 </div>
 
 <div class="card">
-  <h2>7. หมายเหตุ (ถ้ามี)</h2>
+  <h2>6. หมายเหตุ (ถ้ามี)</h2>
   <textarea id="f-note" rows="2" placeholder="พิมพ์เพิ่มเติม เช่น ต้นไหนผิดปกติ"></textarea>
   <label>ชื่อผู้บันทึก</label>
   <input type="text" id="f-name">
@@ -216,10 +195,133 @@ function makeChips(container, list, selected, single) {
 
 function hasAct(kw) { return acts.some(function (a) { return a.indexOf(kw) >= 0; }); }
 function actIsWater(a) { return a.indexOf('รดน้ำ') >= 0; }
-function actIsFert(a) { return a.indexOf('ปุ๋ย') >= 0 || a.indexOf('ใส่') >= 0 || a.indexOf('ราดสาร') >= 0 || a.indexOf('ฉีดพ่นทางใบ') >= 0; }
-function actIsInsect(a) { return a.indexOf('ยาฆ่าแมลง') >= 0; }
-function actIsFung(a) { return a.indexOf('ยากำจัดโรค') >= 0; }
-function actIsBio(a) { return a.indexOf('ชีวภัณฑ์') >= 0; }
+function actIsSpray(a) { return a.indexOf('ฉีดพ่นทางใบ') >= 0 || a.indexOf('พ่นยา') >= 0 || a.indexOf('พ่นชีวภัณฑ์') >= 0; }
+function actIsFert(a) { return !actIsSpray(a) && (a.indexOf('ปุ๋ย') >= 0 || a.indexOf('ใส่') >= 0 || a.indexOf('ราดสาร') >= 0); }
+
+// ---------- ถังพ่น: หลายแปลง × หลายสาร ----------
+var SPRAY_CATS = [
+  { key: 'insect', opt: 'ยาฆ่าแมลง (IRAC)', title: '🐛 ยาฆ่าแมลง/ไร', f: 'ยาฆ่าแมลง', q: 'ปริมาณยาฆ่าแมลง', u: 'หน่วยยาฆ่าแมลง', drug: true },
+  { key: 'fung', opt: 'ยากำจัดโรคพืช (FRAC)', title: '🍄 ยากำจัดโรค', f: 'ยากำจัดโรคพืช', q: 'ปริมาณยากำจัดโรค', u: 'หน่วยยากำจัดโรค', drug: true },
+  { key: 'fert', opt: 'ปุ๋ย', title: '🌿 ปุ๋ย/อาหารเสริม/สารจับใบ', f: 'ปุ๋ย', q: 'ปริมาณปุ๋ย', u: 'หน่วยปุ๋ย', drug: false },
+  { key: 'bio', opt: 'ชีวภัณฑ์', title: '🦠 ชีวภัณฑ์', f: 'ชีวภัณฑ์', q: 'ปริมาณชีวภัณฑ์', u: 'หน่วยชีวภัณฑ์', drug: false }
+];
+function sprayCat(key) { return SPRAY_CATS.filter(function (c) { return c.key === key; })[0]; }
+function defaultWater(plot) {
+  if (plot.indexOf('ทั้งหมด') >= 0) return 800;
+  if (plot.indexOf('หนองสาหร่าย 3') >= 0) return 100;
+  return 200;
+}
+function shortName(n) { return String(n).replace(/^\[[^\]]*\]\s*/, '').replace(/\s*\(.*$/, '').replace(/\s+-\s+.*$/, ''); }
+function shortUnit(u) { return String(u).replace(/\s*\(.*\)\s*$/, ''); }
+function round2(x) { return Math.round(x * 100) / 100; }
+
+function buildSprayPlots() {
+  var box = $('spray-plots'); box.innerHTML = '';
+  (OPT['แปลง'] || []).forEach(function (p) {
+    var d = document.createElement('div'); d.className = 'plot-line';
+    d.innerHTML = '<label class="pl"><input type="checkbox" class="sp-on"><span></span></label>' +
+      '<input type="number" class="sp-water" inputmode="decimal"><span class="l">ลิตร</span>';
+    d.querySelector('span').textContent = p;
+    d.dataset.plot = p;
+    d.querySelector('.sp-water').value = defaultWater(p);
+    d.querySelector('.sp-on').onchange = function () { updateSprayPreview(); validate(); };
+    d.querySelector('.sp-water').oninput = function () { updateSprayPreview(); validate(); };
+    box.appendChild(d);
+  });
+}
+
+function addSprayRow() {
+  var div = document.createElement('div');
+  div.className = 'multi-row';
+  div.innerHTML =
+    '<label>สาร</label><select class="sr-prod"></select>' +
+    '<div class="row">' +
+      '<div><label>ต่อน้ำ 200 ลิตร</label><input type="number" class="sr-qty" inputmode="decimal" placeholder="เช่น 60"></div>' +
+      '<div><label>หน่วย</label><select class="sr-unit"></select></div>' +
+    '</div>' +
+    '<div class="mr-actions"><span class="mr-remove">✕ ลบสารนี้</span></div>';
+  var sel = div.querySelector('.sr-prod');
+  sel.appendChild(new Option('— เลือกสาร —', ''));
+  SPRAY_CATS.forEach(function (c) {
+    var g = document.createElement('optgroup'); g.label = c.title;
+    (OPT[c.opt] || []).forEach(function (v) { g.appendChild(new Option(v, c.key + '|' + v)); });
+    sel.appendChild(g);
+  });
+  fillSelect(div.querySelector('.sr-unit'), OPT['หน่วย'], '— หน่วย —');
+  [sel, div.querySelector('.sr-unit')].forEach(function (el) { el.onchange = function () { updateSprayPreview(); validate(); }; });
+  div.querySelector('.sr-qty').oninput = function () { updateSprayPreview(); validate(); };
+  div.querySelector('.mr-remove').onclick = function () {
+    div.remove();
+    if (!$('spray-rows').children.length) addSprayRow();
+    updateSprayPreview(); validate();
+  };
+  $('spray-rows').appendChild(div);
+}
+
+function sprayPlots() {
+  var out = [];
+  $('spray-plots').querySelectorAll('.plot-line').forEach(function (d) {
+    var w = parseFloat(d.querySelector('.sp-water').value);
+    if (d.querySelector('.sp-on').checked) out.push({ plot: d.dataset.plot, water: w });
+  });
+  return out;
+}
+function sprayProducts() {
+  var out = [];
+  $('spray-rows').querySelectorAll('.multi-row').forEach(function (r) {
+    var v = r.querySelector('.sr-prod').value;
+    if (!v) return;
+    var i = v.indexOf('|');
+    out.push({ cat: v.slice(0, i), name: v.slice(i + 1), qty: parseFloat(r.querySelector('.sr-qty').value), unit: r.querySelector('.sr-unit').value });
+  });
+  return out;
+}
+function sprayHasDrug() { return sprayProducts().some(function (p) { return sprayCat(p.cat).drug; }); }
+
+function updateSprayPreview() {
+  var plots = sprayPlots(), prods = sprayProducts().filter(function (p) { return p.qty > 0 && p.unit; });
+  var box = $('spray-preview');
+  if (!plots.length || !prods.length) { box.classList.add('hidden'); return; }
+  var html = '<b>ระบบจะบันทึกยอดรวมแต่ละแปลงดังนี้</b>';
+  plots.forEach(function (pl) {
+    var items = prods.map(function (p) { return shortName(p.name) + ' ' + round2(p.qty * (pl.water || 0) / 200) + ' ' + shortUnit(p.unit); });
+    var div = document.createElement('div'); div.textContent = '• ' + pl.plot + ' (น้ำ ' + (pl.water || 0) + ' ลิตร): ' + items.join(', ');
+    html += div.outerHTML;
+  });
+  box.innerHTML = html; box.classList.remove('hidden');
+}
+
+function sprayValid() {
+  var plots = sprayPlots();
+  if (!plots.length || plots.some(function (p) { return !(p.water > 0); })) return false;
+  var rows = $('spray-rows').querySelectorAll('.multi-row'), any = false, bad = false;
+  rows.forEach(function (r) {
+    var v = r.querySelector('.sr-prod').value, q = parseFloat(r.querySelector('.sr-qty').value), u = r.querySelector('.sr-unit').value;
+    if (!v && !r.querySelector('.sr-qty').value) return;  // แถวว่าง ข้ามได้
+    if (v && q > 0 && u) any = true; else bad = true;
+  });
+  return any && !bad;
+}
+
+function fileToBase64(file, maxW) {
+  return new Promise(function (resolve) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var scale = Math.min(1, maxW / img.width);
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * scale)); c.height = Math.max(1, Math.round(img.height * scale));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        try { resolve(c.toDataURL('image/jpeg', 0.6).split(',')[1]); } catch (e) { resolve(''); }
+      };
+      img.onerror = function () { resolve(''); };
+      img.src = reader.result;
+    };
+    reader.onerror = function () { resolve(''); };
+    reader.readAsDataURL(file);
+  });
+}
 
 // ---------- แถวรดน้ำ/ปุ๋ยแบบเพิ่มได้หลายแปลง ----------
 function addWaterRow() {
@@ -286,7 +388,7 @@ function fertRowsValid() {
 function computeState() {
   var hasWater = acts.some(actIsWater);
   var hasFert = acts.some(actIsFert);
-  var otherActs = acts.filter(function (a) { return !actIsWater(a) && !actIsFert(a) && !actIsInsect(a) && !actIsFung(a) && !actIsBio(a); });
+  var otherActs = acts.filter(function (a) { return !actIsWater(a) && !actIsFert(a) && !actIsSpray(a); });
   var needsMainPlot = otherActs.length > 0 || pests.length > 0 || $('f-note').value.trim().length > 0;
   return { hasWater: hasWater, hasFert: hasFert, otherActs: otherActs, needsMainPlot: needsMainPlot };
 }
@@ -307,9 +409,9 @@ function onActsChange() {
   var st = computeState();
   toggleSection('sec-water', st.hasWater, 'water-rows', addWaterRow);
   toggleSection('sec-fert', st.hasFert, 'fert-rows', addFertRow);
-  $('sec-insect').classList.toggle('hidden', !hasAct('ยาฆ่าแมลง'));
-  $('sec-fung').classList.toggle('hidden', !hasAct('ยากำจัดโรค'));
-  $('sec-bio').classList.toggle('hidden', !hasAct('ชีวภัณฑ์'));
+  var showSpray = acts.some(actIsSpray);
+  if (showSpray && $('sec-spray').classList.contains('hidden') && !$('spray-rows').children.length) addSprayRow();
+  $('sec-spray').classList.toggle('hidden', !showSpray);
   $('block-plot').classList.toggle('hidden', !st.needsMainPlot);
   validate();
 }
@@ -322,15 +424,14 @@ function validate() {
   if (st.hasWater) ok = ok && waterRowsValid();
   if (st.hasFert) ok = ok && fertRowsValid();
   if (st.needsMainPlot) ok = ok && !!$('f-plot').value;
-  if (!$('sec-insect').classList.contains('hidden')) ok = ok && !!$('f-ins-plot').value;
-  if (!$('sec-fung').classList.contains('hidden')) ok = ok && !!$('f-fung-plot').value;
-  // บังคับถ่ายรูปฉลากยา เมื่อบันทึกยาฆ่าแมลงหรือยากำจัดโรค
-  var missPhoto = [];
-  if (!$('sec-insect').classList.contains('hidden') && !hasPhoto('f-ins-photo')) missPhoto.push('ยาฆ่าแมลง');
-  if (!$('sec-fung').classList.contains('hidden') && !hasPhoto('f-fung-photo')) missPhoto.push('ยากำจัดโรค');
-  if (missPhoto.length) ok = false;
-  $('submit-hint').textContent = missPhoto.length ? '📷 ยังไม่ได้ถ่ายรูปฉลาก' + missPhoto.join(' และ ') + ' — ถ่ายก่อนจึงจะส่งได้' : '';
-  if (!$('sec-bio').classList.contains('hidden')) ok = ok && !!$('f-bio-plot').value;
+  var missPhoto = false;
+  if (!$('sec-spray').classList.contains('hidden')) {
+    ok = ok && sprayValid();
+    var needPhoto = sprayHasDrug();
+    $('spray-photo-req').textContent = needPhoto ? '* ต้องถ่ายทุกครั้งที่มียา' : '(ถ้ามี)';
+    if (needPhoto && !hasPhoto('f-spray-photo')) { missPhoto = true; ok = false; }
+  }
+  $('submit-hint').textContent = missPhoto ? '📷 ยังไม่ได้ถ่ายรูปฉลากยา — ถ่ายก่อนจึงจะส่งได้' : '';
   $('btn-submit').disabled = !ok;
 }
 
@@ -377,11 +478,12 @@ function init() {
   $('btn-add-fert').onclick = addFertRow;
   $('f-note').oninput = onActsChange;
   $('f-plot').onchange = validate;
-  $('f-ins-plot').onchange = validate;
-  $('f-fung-plot').onchange = validate;
-  $('f-bio-plot').onchange = validate;
-  $('f-ins-photo').onchange = validate;
-  $('f-fung-photo').onchange = validate;
+  $('btn-add-spray').onclick = function () { addSprayRow(); validate(); };
+  $('f-spray-photo').onchange = function () {
+    var n = $('f-spray-photo').files.length;
+    $('spray-photo-count').textContent = n ? ('ถ่ายแล้ว ' + n + ' รูป ✅ (กดอีกครั้งเพื่อถ่ายใหม่/เลือกหลายรูป)') : '';
+    validate();
+  };
 
   fetch(GAS_URL + '?action=options')
     .then(function (r) { return r.json(); })
@@ -390,17 +492,9 @@ function init() {
       var noSep = function (list) { return (list || []).filter(function (v) { return v.indexOf('—') < 0; }); };
       var units = OPT['หน่วย'];
       fillSelect($('f-plot'), OPT['แปลง'], '— เลือกแปลง —');
-      fillSelect($('f-ins-plot'), OPT['แปลง'], '— เลือกแปลง —');
-      fillSelect($('f-fung-plot'), OPT['แปลง'], '— เลือกแปลง —');
-      fillSelect($('f-bio-plot'), OPT['แปลง'], '— เลือกแปลง —');
       makeChips($('f-acts'), OPT['กิจกรรมหลัก'], acts);
       makeChips($('f-pests'), noSep(OPT['โรคและแมลงที่พบ']), pests);
-      fillSelect($('f-ins'), OPT['ยาฆ่าแมลง (IRAC)'], '— เลือกยา —');
-      fillSelect($('f-ins-unit'), units, '— หน่วย —');
-      fillSelect($('f-fung'), OPT['ยากำจัดโรคพืช (FRAC)'], '— เลือกยา —');
-      fillSelect($('f-fung-unit'), units, '— หน่วย —');
-      fillSelect($('f-bio'), OPT['ชีวภัณฑ์'], '— เลือกชีวภัณฑ์ —');
-      fillSelect($('f-bio-unit'), units, '— หน่วย —');
+      buildSprayPlots();
     })
     .catch(function () {
       overlay('⚠️', 'โหลดตัวเลือกไม่ได้', 'เช็คอินเทอร์เน็ตแล้วเปิดฟอร์มใหม่อีกครั้ง');
@@ -428,8 +522,11 @@ $('btn-submit').onclick = async function () {
   var records = [];
 
   // ถ่ายรูปฉลากยา (ถ้ามีและหมวดนั้นเปิดอยู่) — ย่อขนาดก่อนส่งกันช้า
-  var insPhoto = $('sec-insect').classList.contains('hidden') ? '' : await readPhotoAsBase64($('f-ins-photo'), 1000);
-  var fungPhoto = $('sec-fung').classList.contains('hidden') ? '' : await readPhotoAsBase64($('f-fung-photo'), 1000);
+  var photos = [];
+  if (!$('sec-spray').classList.contains('hidden')) {
+    var files = Array.prototype.slice.call($('f-spray-photo').files || [], 0, 6);
+    for (var fi = 0; fi < files.length; fi++) { var b64 = await fileToBase64(files[fi], 1000); if (b64) photos.push(b64); }
+  }
 
   // รดน้ำ — 1 แถวต่อแปลงที่เลือก
   $('water-rows').querySelectorAll('.multi-row').forEach(function (r) {
@@ -456,39 +553,20 @@ $('btn-submit').onclick = async function () {
     });
   });
 
-  // ยาฆ่าแมลง — แปลงของตัวเอง แยกจากกิจกรรมอื่น
-  if (!$('sec-insect').classList.contains('hidden') && $('f-ins-plot').value) {
-    records.push({
-      _type: 'insect', 'วันที่': dateVal, 'แปลง': $('f-ins-plot').value,
-      'กิจกรรมหลัก': acts.filter(actIsInsect).join(', '),
-      'ยาฆ่าแมลง': $('f-ins').value,
-      'ปริมาณยาฆ่าแมลง': $('f-ins-qty').value,
-      'หน่วยยาฆ่าแมลง': $('f-ins-unit').value,
-      'ผู้บันทึก': recorder
-    });
-  }
-
-  // ยากำจัดโรคพืช — แปลงของตัวเอง แยกจากกิจกรรมอื่น
-  if (!$('sec-fung').classList.contains('hidden') && $('f-fung-plot').value) {
-    records.push({
-      _type: 'fung', 'วันที่': dateVal, 'แปลง': $('f-fung-plot').value,
-      'กิจกรรมหลัก': acts.filter(actIsFung).join(', '),
-      'ยากำจัดโรคพืช': $('f-fung').value,
-      'ปริมาณยากำจัดโรค': $('f-fung-qty').value,
-      'หน่วยยากำจัดโรค': $('f-fung-unit').value,
-      'ผู้บันทึก': recorder
-    });
-  }
-
-  // ชีวภัณฑ์ — แปลงของตัวเอง แยกจากกิจกรรมอื่น
-  if (!$('sec-bio').classList.contains('hidden') && $('f-bio-plot').value) {
-    records.push({
-      _type: 'bio', 'วันที่': dateVal, 'แปลง': $('f-bio-plot').value,
-      'กิจกรรมหลัก': acts.filter(actIsBio).join(', '),
-      'ชีวภัณฑ์': $('f-bio').value,
-      'ปริมาณชีวภัณฑ์': $('f-bio-qty').value,
-      'หน่วยชีวภัณฑ์': $('f-bio-unit').value,
-      'ผู้บันทึก': recorder
+  // ถังพ่น — 1 แถวต่อ (แปลง × สาร) ปริมาณ = ต่อ 200 ลิตร × น้ำจริง ÷ 200
+  if (!$('sec-spray').classList.contains('hidden')) {
+    var sprayActs = acts.filter(actIsSpray).join(', ');
+    var prods = sprayProducts().filter(function (p) { return p.qty > 0 && p.unit; });
+    sprayPlots().forEach(function (pl) {
+      prods.forEach(function (p) {
+        var c = sprayCat(p.cat), rec = {
+          _type: 'spray', 'วันที่': dateVal, 'แปลง': pl.plot, 'กิจกรรมหลัก': sprayActs,
+          'หมายเหตุ': 'ถังพ่น น้ำ ' + pl.water + ' ลิตร (สูตรต่อ 200 ลิตร: ' + p.qty + ' ' + shortUnit(p.unit) + ')',
+          'ผู้บันทึก': recorder
+        };
+        rec[c.f] = p.name; rec[c.q] = round2(p.qty * pl.water / 200); rec[c.u] = p.unit;
+        records.push(rec);
+      });
     });
   }
 
@@ -505,11 +583,11 @@ $('btn-submit').onclick = async function () {
 
   if (!records.length) { $('btn-submit').disabled = false; $('overlay').style.display = 'none'; return; }
 
-  overlay('⏳', 'กำลังส่งข้อมูล...', insPhoto || fungPhoto ? 'กำลังอัปโหลดรูปด้วย รอสักครู่...' : '');
+  overlay('⏳', 'กำลังส่งข้อมูล...', photos.length ? 'กำลังอัปโหลดรูป ' + photos.length + ' รูป รอสักครู่...' : '');
   fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'submit', data: records, insPhoto: insPhoto, fungPhoto: fungPhoto })
+    body: JSON.stringify({ action: 'submit', data: records, photos: photos })
   })
     .then(function (r) { return r.json(); })
     .then(function (j) {
