@@ -120,7 +120,7 @@
     <div><label>ปริมาณ</label><input type="number" id="f-ins-qty" inputmode="decimal" placeholder="เช่น 20"></div>
     <div><label>หน่วย</label><select id="f-ins-unit"></select></div>
   </div>
-  <label>📷 ถ่ายรูปฉลากยา <span class="hint">(แนะนำ กันกรอกผิด)</span></label>
+  <label>📷 ถ่ายรูปฉลากยา <span style="color:#c62828">* ต้องถ่ายทุกครั้ง</span></label>
   <input type="file" accept="image/*" capture="environment" id="f-ins-photo">
 </div>
 
@@ -134,7 +134,7 @@
     <div><label>ปริมาณ</label><input type="number" id="f-fung-qty" inputmode="decimal" placeholder="เช่น 30"></div>
     <div><label>หน่วย</label><select id="f-fung-unit"></select></div>
   </div>
-  <label>📷 ถ่ายรูปฉลากยา <span class="hint">(แนะนำ กันกรอกผิด)</span></label>
+  <label>📷 ถ่ายรูปฉลากยา <span style="color:#c62828">* ต้องถ่ายทุกครั้ง</span></label>
   <input type="file" accept="image/*" capture="environment" id="f-fung-photo">
 </div>
 
@@ -164,6 +164,7 @@
 
 <div class="submit-bar">
   <button class="submit" id="btn-submit" disabled>✅ ส่งข้อมูล</button>
+  <div id="submit-hint" style="color:#c62828;text-align:center;margin-top:8px;font-size:15px"></div>
 </div>
 
 <div id="overlay">
@@ -313,6 +314,8 @@ function onActsChange() {
   validate();
 }
 
+function hasPhoto(id) { var el = $(id); return !!(el && el.files && el.files.length); }
+
 function validate() {
   var st = computeState();
   var ok = acts.length > 0;
@@ -321,6 +324,12 @@ function validate() {
   if (st.needsMainPlot) ok = ok && !!$('f-plot').value;
   if (!$('sec-insect').classList.contains('hidden')) ok = ok && !!$('f-ins-plot').value;
   if (!$('sec-fung').classList.contains('hidden')) ok = ok && !!$('f-fung-plot').value;
+  // บังคับถ่ายรูปฉลากยา เมื่อบันทึกยาฆ่าแมลงหรือยากำจัดโรค
+  var missPhoto = [];
+  if (!$('sec-insect').classList.contains('hidden') && !hasPhoto('f-ins-photo')) missPhoto.push('ยาฆ่าแมลง');
+  if (!$('sec-fung').classList.contains('hidden') && !hasPhoto('f-fung-photo')) missPhoto.push('ยากำจัดโรค');
+  if (missPhoto.length) ok = false;
+  $('submit-hint').textContent = missPhoto.length ? '📷 ยังไม่ได้ถ่ายรูปฉลาก' + missPhoto.join(' และ ') + ' — ถ่ายก่อนจึงจะส่งได้' : '';
   if (!$('sec-bio').classList.contains('hidden')) ok = ok && !!$('f-bio-plot').value;
   $('btn-submit').disabled = !ok;
 }
@@ -371,6 +380,8 @@ function init() {
   $('f-ins-plot').onchange = validate;
   $('f-fung-plot').onchange = validate;
   $('f-bio-plot').onchange = validate;
+  $('f-ins-photo').onchange = validate;
+  $('f-fung-photo').onchange = validate;
 
   fetch(GAS_URL + '?action=options')
     .then(function (r) { return r.json(); })
